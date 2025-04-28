@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <locale.h>
+
+typedef struct {
+    double weight;
+    int parent;
+    int lchild;
+    int rchild;
+} HuffmanNode;
+
+void generateHuffmanCodes(HuffmanNode* tree, char** codes, int n) {
+    for (int i = 0; i < n; i++) {
+        int current = i;
+        int parent = tree[current].parent;
+        int codeIndex = 0;
+        char* tempCode = (char*)malloc(n * sizeof(char));  // 动态分配临时存储
+
+        if (tempCode == NULL) {
+            printf("内存分配失败！\n");
+            exit(1);
+        }
+
+        // 逆向生成编码
+        while (parent != -1) {
+            if (tree[parent].lchild == current) {
+                tempCode[codeIndex++] = '0';
+            }
+            else {
+                tempCode[codeIndex++] = '1';
+            }
+            current = parent;
+            parent = tree[current].parent;
+        }
+
+        // 反转编码并存入结果
+        codes[i][codeIndex] = '\0';
+        for (int j = 0; j < codeIndex; j++) {
+            codes[i][j] = tempCode[codeIndex - 1 - j];
+        }
+        free(tempCode);  // 释放临时内存
+    }
+}
+
+int main() {
+    setlocale(LC_ALL, "");  // 支持中文输出
+
+    int n;
+    printf("请输入字符的个数：");
+    scanf("%d", &n);
+
+    HuffmanNode* huffmanTree = (HuffmanNode*)malloc((2 * n - 1) * sizeof(HuffmanNode));
+
+    // 初始化叶子节点
+    for (int i = 0; i < n; i++) {
+        printf("请输入第%d个字符的概率：", i + 1);
+        scanf("%lf", &huffmanTree[i].weight);
+        huffmanTree[i].parent = -1;
+        huffmanTree[i].lchild = -1;
+        huffmanTree[i].rchild = -1;
+    }
+
+    // 构建哈夫曼树
+    for (int i = 0; i < n - 1; i++) {
+        int min1 = -1, min2 = -1;
+
+        // 查找两个最小权重节点
+        for (int j = 0; j < n + i; j++) {
+            if (huffmanTree[j].parent == -1) {
+                if (min1 == -1 || huffmanTree[j].weight < huffmanTree[min1].weight) {
+                    min1 = j;
+                }
+            }
+        }
+        for (int j = 0; j < n + i; j++) {
+            if (j != min1 && huffmanTree[j].parent == -1) {
+                if (min2 == -1 || huffmanTree[j].weight < huffmanTree[min2].weight) {
+                    min2 = j;
+                }
+            }
+        }
+
+        // 创建新节点
+        int newNode = n + i;
+        huffmanTree[newNode].weight = huffmanTree[min1].weight + huffmanTree[min2].weight;
+        huffmanTree[newNode].lchild = min1;
+        huffmanTree[newNode].rchild = min2;
+        huffmanTree[min1].parent = newNode;
+        huffmanTree[min2].parent = newNode;
+        huffmanTree[newNode].parent = -1;
+    }
+
+    // 分配编码存储空间
+    char** codes = (char**)malloc(n * sizeof(char*));
+    for (int i = 0; i < n; i++) {
+        codes[i] = (char*)malloc((n + 1) * sizeof(char));  // 分配n+1的空间
+    }
+
+    generateHuffmanCodes(huffmanTree, codes, n);
+
+    // 输出结果
+    printf("\n哈夫曼编码结果：\n");
+    for (int i = 0; i < n; i++) {
+        printf("字符%d（概率%.2f）的编码：%s\n",
+            i + 1, huffmanTree[i].weight, codes[i]);
+        free(codes[i]);
+    }
+
+    free(codes);
+    free(huffmanTree);
+    return 0;
+}
